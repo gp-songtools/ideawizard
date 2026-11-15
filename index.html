@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧙</text></svg>">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Idea Wizard</title>
+<meta name="description" content="Turn a GP Blueprint style prompt, a song structure and an Earprint analysis into three song ideas, then drill into each one.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1><span aria-hidden="true">🧙</span> Idea Wizard</h1>
+    <p class="sub">Song ideas that fit your sound. Paste in what GP Blueprint and Earprint gave you, get three ideas, and drill into the one you like.</p>
+  </div>
+</header>
+
+<main>
+  <section class="card" aria-labelledby="h-sound">
+    <div class="card-head">
+      <h2 id="h-sound"><span class="step">1</span> Your sound</h2>
+      <button type="button" class="ghost small" id="clearInputs">Clear</button>
+    </div>
+    <p class="hint">Fill in any of these. The more you give, the better the ideas fit.</p>
+    <div class="inputs">
+      <div class="field">
+        <label for="style">Style prompt <span class="opt">from GP Blueprint</span></label>
+        <textarea id="style" rows="6" placeholder="Paste the Suno Style Prompt (GP Blueprint › Suno Style Prompt › Copy)"></textarea>
+        <p class="hint">In <a href="https://gp-songtools.github.io/gp-blueprint/" target="_blank" rel="noopener">GP Blueprint</a>, press <b>Copy</b> on the Suno Style Prompt card. Any style description works too.</p>
+      </div>
+      <div class="field">
+        <label for="structure">Song structure <span class="opt">from GP Blueprint</span></label>
+        <textarea id="structure" rows="6" spellcheck="false" placeholder="[VERSE 1: half-spoken, tense]&#10;16 bars, 43 secs, 8 lines. Rhyme: ABABCDCD. …"></textarea>
+        <p class="hint" id="structInfo">In GP Blueprint, press <b>Copy</b> on the Song Structure &amp; Meter card.</p>
+      </div>
+      <div class="field">
+        <label for="earprint">Track analysis <span class="opt">from Earprint</span></label>
+        <textarea id="earprint" rows="6" placeholder="Paste Earprint's tags (Earprint › AI review › Copy for Idea Wizard)"></textarea>
+        <p class="hint" id="epInfo">In <a href="https://gp-songtools.github.io/earprint/" target="_blank" rel="noopener">Earprint</a>, write an AI review, then press <b>Copy for Idea Wizard</b>.</p>
+      </div>
+    </div>
+    <div class="field">
+      <label for="steer">Steer it <span class="opt">optional</span></label>
+      <input id="steer" type="text" autocomplete="off" placeholder="e.g. about my hometown, hopeful, no breakup songs">
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-ai">
+    <div class="card-head"><h2 id="h-ai"><span class="step">2</span> AI</h2></div>
+    <div class="seg" role="radiogroup" aria-label="AI provider">
+      <label><input type="radio" name="provider" value="claude"><span>Claude</span></label>
+      <label><input type="radio" name="provider" value="gemini"><span>Gemini</span></label>
+      <label><input type="radio" name="provider" value="groq"><span>Groq</span></label>
+    </div>
+    <div class="ai-grid">
+      <div class="field">
+        <label for="key" id="keyLabel">API key</label>
+        <div class="row">
+          <input id="key" type="password" autocomplete="off" spellcheck="false">
+          <button type="button" class="ghost" id="keyShow">Show</button>
+          <button type="button" class="ghost" id="keyForget">Forget</button>
+        </div>
+        <label class="chk"><input type="checkbox" id="keyRemember"> Remember key on this device</label>
+        <p class="hint" id="keyNote"></p>
+      </div>
+      <div class="field">
+        <label for="model">Model</label>
+        <select id="model"></select>
+        <p class="hint" id="modelNote"></p>
+      </div>
+    </div>
+  </section>
+
+  <div class="go-row">
+    <button type="button" class="go" id="go">✨ Conjure 3 ideas</button>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+  </div>
+
+  <section id="results" hidden aria-labelledby="h-ideas">
+    <div class="card-head">
+      <h2 id="h-ideas"><span class="step">3</span> Ideas</h2>
+      <button type="button" class="ghost small" id="more">More ideas</button>
+    </div>
+    <ol class="ideas" id="ideas"></ol>
+  </section>
+
+  <section id="detail" class="card detail" hidden aria-live="polite"></section>
+</main>
+
+<footer class="foot">
+  <a href="changelog.html">Changelog</a>
+  <a href="https://gp-songtools.github.io/toolsmenu/privacy.html">Privacy &amp; credits</a>
+  <a href="https://gp-songtools.github.io/toolsmenu/">More GP Song Tools</a>
+</footer>
+
+<script type="module" src="app.js"></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "2c5b0c69f74b496998f02d0e1f651bd5"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>

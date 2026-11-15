@@ -154,13 +154,13 @@ function request(user, schema) {
   return ask({ provider: p, key: keys[p], model: $("model").value, system: SYSTEM, user, schema });
 }
 
-// Structure and analysis only refine the ideas; a style prompt or a direction is enough to start.
-function hasInput() { return ["style", "steer"].some((id) => $(id).value.trim()); }
+// The structure only refines the ideas; a style prompt, an Earprint analysis or a direction is enough to start.
+function hasInput() { return ["style", "earprint", "steer"].some((id) => $(id).value.trim()); }
 
 // ---------- level 1: three ideas ----------
 
 async function conjure(more = false) {
-  if (!hasInput()) { setStatus("Paste a style prompt or type a direction in Steer it first. The structure and track analysis are optional.", true); $("style").focus(); return; }
+  if (!hasInput()) { setStatus("Paste a style prompt or an Earprint analysis, or type a direction in Steer it, first. The song structure is optional.", true); $("style").focus(); return; }
   if (!keys[provider()]) { setStatus(`Paste your ${PROVIDERS[provider()].name} API key first.`, true); $("key").focus(); return; }
   if (!$("model").value) { await maybeLoadModels(); if (!$("model").value) { setStatus("Choose a model first.", true); return; } }
   const avoid = more ? state.ideas.map((i) => i.title) : [];

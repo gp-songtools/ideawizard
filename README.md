@@ -6,7 +6,7 @@ Live at https://gp-songtools.github.io/ideawizard/
 
 ## How it works
 
-1. **Your sound.** A style prompt is enough (or just a direction); the structure and analysis are optional and refine the ideas:
+1. **Your sound.** A style prompt or a track analysis is enough (or just a direction); the rest are optional and refine the ideas:
    - **Style prompt**: GP Blueprint › Suno Style Prompt › **Copy** (any style description works too).
    - **Song structure** (optional): GP Blueprint › Song Structure & Meter › **Copy**. Idea Wizard reads its sections, line counts, rhyme schemes and syllables.
    - **Track analysis** (optional): Earprint › AI review › **Copy for Idea Wizard** (tempo, key, mood, genres, instruments, lyric themes).

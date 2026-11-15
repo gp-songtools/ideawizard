@@ -6,10 +6,10 @@ Live at https://gp-songtools.github.io/ideawizard/
 
 ## How it works
 
-1. **Your sound.** Paste any of:
+1. **Your sound.** A style prompt is enough (or just a direction); the structure and analysis are optional and refine the ideas:
    - **Style prompt**: GP Blueprint › Suno Style Prompt › **Copy** (any style description works too).
-   - **Song structure**: GP Blueprint › Song Structure & Meter › **Copy**. Idea Wizard reads its sections, line counts, rhyme schemes and syllables.
-   - **Track analysis**: Earprint › AI review › **Copy for Idea Wizard** (tempo, key, mood, genres, instruments, lyric themes).
+   - **Song structure** (optional): GP Blueprint › Song Structure & Meter › **Copy**. Idea Wizard reads its sections, line counts, rhyme schemes and syllables.
+   - **Track analysis** (optional): Earprint › AI review › **Copy for Idea Wizard** (tempo, key, mood, genres, instruments, lyric themes).
    - **Steer it** (optional): a direction such as "about my hometown, hopeful".
 2. **AI.** Choose Claude, Gemini or Groq and paste your own API key. Idea Wizard lists the models the key can use.
 3. **Conjure 3 ideas.** Each has a title, topic, theme, subject, angle, hook concept, imagery and why it fits.

@@ -39,12 +39,12 @@ function refreshInputHints() {
   const si = $("structInfo");
   if (st) { si.textContent = `Read as GP Blueprint's structure: ${describeStructure(st)}.`; si.className = "hint ok"; }
   else if (sTxt) { si.textContent = "This doesn't look like GP Blueprint's Song Structure, but it will still be used as notes."; si.className = "hint"; }
-  else { si.innerHTML = "In GP Blueprint, press <b>Copy</b> on the Song Structure &amp; Meter card."; si.className = "hint"; }
+  else { si.innerHTML = "Refines the plan to your exact sections and line counts. In GP Blueprint, press <b>Copy</b> on the Song Structure &amp; Meter card."; si.className = "hint"; }
   const e = $("earprint").value;
   const ei = $("epInfo");
   if (e.trim() && looksLikeEarprint(e)) { ei.textContent = "Read as Earprint's analysis."; ei.className = "hint ok"; }
   else if (e.trim()) { ei.textContent = "Will be used as notes about the track."; ei.className = "hint"; }
-  else { ei.innerHTML = 'In <a href="https://gp-songtools.github.io/earprint/" target="_blank" rel="noopener">Earprint</a>, write an AI review, then press <b>Copy for Idea Wizard</b>.'; ei.className = "hint"; }
+  else { ei.innerHTML = 'Refines the ideas to the track\'s mood, tempo and themes. In <a href="https://gp-songtools.github.io/earprint/" target="_blank" rel="noopener">Earprint</a>, write an AI review, then press <b>Copy for Idea Wizard</b>.'; ei.className = "hint"; }
 }
 
 for (const id of INPUTS) {
@@ -154,12 +154,13 @@ function request(user, schema) {
   return ask({ provider: p, key: keys[p], model: $("model").value, system: SYSTEM, user, schema });
 }
 
-function hasInput() { return ["style", "structure", "earprint", "steer"].some((id) => $(id).value.trim()); }
+// Structure and analysis only refine the ideas; a style prompt or a direction is enough to start.
+function hasInput() { return ["style", "steer"].some((id) => $(id).value.trim()); }
 
 // ---------- level 1: three ideas ----------
 
 async function conjure(more = false) {
-  if (!hasInput()) { setStatus("Paste a style prompt, a structure or an Earprint analysis first (or type a direction in Steer it).", true); $("style").focus(); return; }
+  if (!hasInput()) { setStatus("Paste a style prompt or type a direction in Steer it first. The structure and track analysis are optional.", true); $("style").focus(); return; }
   if (!keys[provider()]) { setStatus(`Paste your ${PROVIDERS[provider()].name} API key first.`, true); $("key").focus(); return; }
   if (!$("model").value) { await maybeLoadModels(); if (!$("model").value) { setStatus("Choose a model first.", true); return; } }
   const avoid = more ? state.ideas.map((i) => i.title) : [];
@@ -226,6 +227,7 @@ function renderDetail() {
   box.append(meta);
 
   box.append(el("h4", null, "Section by section"));
+  if (!plan.sections.some((s) => s.struct)) box.append(el("p", "hint", "A typical song layout. Paste GP Blueprint's song structure and Expand again to plan your exact sections, line counts and rhymes."));
   const secs = el("ol", "secs");
   plan.sections.forEach((sec, n) => {
     const li = el("li", "sec" + (sec.instrumental ? " inst" : ""));

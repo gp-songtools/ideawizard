@@ -2,7 +2,7 @@ import { PROVIDERS, listModels, defaultModel, ask } from "./providers.js";
 import {
   SYSTEM, parseStructure, describeStructure, looksLikeEarprint,
   ideasPrompt, expandPrompt, deeperPrompt, IDEAS_SCHEMA, EXPAND_SCHEMA, DEEPER_SCHEMA,
-  cleanIdeas, cleanPlan, cleanDeeper, lyricpadTopic, fullIdeaText,
+  cleanIdeas, cleanPlan, cleanDeeper, lyricpadTopic, structureText, fullIdeaText,
 } from "./prompts.js";
 
 const $ = (id) => document.getElementById(id);
@@ -227,11 +227,11 @@ function renderDetail() {
   box.append(meta);
 
   box.append(el("h4", null, "Section by section"));
-  if (!plan.sections.some((s) => s.struct)) box.append(el("p", "hint", "A typical song layout. Paste GP Blueprint's song structure and Expand again to plan your exact sections, line counts and rhymes."));
+  if (plan.sections.every((s) => s.struct?.suggested)) box.append(el("p", "hint", "A typical song layout, with suggested line counts and rhymes. Paste GP Blueprint's song structure and Expand again to plan your exact sections."));
   const secs = el("ol", "secs");
   plan.sections.forEach((sec, n) => {
     const li = el("li", "sec" + (sec.instrumental ? " inst" : ""));
-    const lines = sec.struct?.lines ? ` · ${sec.struct.lines} lines${sec.struct.rhyme ? " · " + sec.struct.rhyme : ""}` : sec.instrumental ? " · instrumental" : "";
+    const lines = (sec.struct?.lines ? ` · ${sec.struct.lines} lines${sec.struct.rhyme ? " · " + sec.struct.rhyme : ""}` : sec.instrumental ? " · instrumental" : "") + (sec.struct?.suggested ? " (suggested)" : "");
     li.append(el("div", "tag", sec.tag + lines), el("p", null, sec.beat));
     if (sec.images.length) li.append(chips(sec.images));
     const d = state.deeper[`${i}:${n}`];
@@ -266,10 +266,13 @@ function renderDetail() {
   const msg = el("span", "copied"); msg.setAttribute("role", "status");
   const cl = el("button", null, "Copy for Lyricpad"); cl.type = "button";
   cl.onclick = () => copy(lyricpadTopic(idea, plan), msg, "Copied. In Lyricpad, paste it into Suggest lines › Topic / feel.");
+  const cs = el("button", null, "Copy song structure"); cs.type = "button";
+  cs.onclick = () => copy(structureText(plan, structure(), inputs(), Object.fromEntries(plan.sections.map((_, n) => [n, state.deeper[`${i}:${n}`]]).filter(([, v]) => v))), msg,
+    "Copied in GP Blueprint's structure format. In Lyricpad, paste it into Suggest lines › Write a whole song from a structure.");
   const cf = el("button", "ghost", "Copy the whole plan"); cf.type = "button";
   cf.onclick = () => copy(fullIdeaText(idea, plan, Object.fromEntries(plan.sections.map((_, n) => [n, state.deeper[`${i}:${n}`]]).filter(([, v]) => v))), msg, "Copied the whole plan as text.");
   const lp = el("a", null, "Open Lyricpad"); lp.href = "https://gp-songtools.github.io/lyricpad/"; lp.target = "_blank"; lp.rel = "noopener";
-  act.append(cl, cf, lp, msg); box.append(act);
+  act.append(cl, cs, cf, lp, msg); box.append(act);
 }
 
 // ---------- level 3: line by line ----------

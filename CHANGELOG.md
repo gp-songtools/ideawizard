@@ -2,6 +2,13 @@
 
 All notable changes to Idea Wizard, newest first. The app has no version numbers, so entries are grouped by date.
 
+## 2026-11-16 — Copy song structure
+
+### Added
+
+- **Copy song structure** on every song plan: copies the plan in GP Blueprint's song structure format, with each section's story, images and any line-by-line directions. Paste it into Lyricpad's *Write a whole song from a structure* and the lyrics follow your plan. It still works anywhere a GP Blueprint structure does, including back in Idea Wizard.
+- Without a pasted structure, the plan now suggests line counts, bars and a rhyme scheme for each section (marked "suggested"), and **Go deeper** follows them.
+
 ## 2026-11-15 — First release
 
 ### Added

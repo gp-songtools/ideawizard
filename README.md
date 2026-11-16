@@ -15,7 +15,7 @@ Live at https://gp-songtools.github.io/ideawizard/
 3. **Conjure 3 ideas.** Each has a title, topic, theme, subject, angle, hook concept, imagery and why it fits.
 4. **Expand** an idea into a song plan: logline, perspective, tone, a beat and images per section (using your structure's sections), hook ideas, a word bank, other titles and clichés to avoid.
 5. **Go deeper** on a sung section for one direction per lyric line, following its rhyme scheme and syllable targets, with end-word ideas.
-6. **Copy for Lyricpad** puts the idea in one line for [Lyricpad](https://gp-songtools.github.io/lyricpad/)'s Suggest lines › Topic / feel box, where it can write the lyrics (with GP Blueprint's structure, via *Write a whole song from a structure*). **Copy the whole plan** copies everything as text.
+6. **Copy for Lyricpad** puts the idea in one line for [Lyricpad](https://gp-songtools.github.io/lyricpad/)'s Suggest lines › Topic / feel box, where it can write the lyrics (with GP Blueprint's structure, via *Write a whole song from a structure*). **Copy song structure** copies the plan in GP Blueprint's structure format: each section's bars, line count and rhyme scheme (from your pasted structure, or suggested), with its story, images and any line-by-line directions. Paste it into Lyricpad's *Write a whole song from a structure* to have the lyrics follow the plan. **Copy the whole plan** copies everything as text.
 
 ## Privacy & credits
 

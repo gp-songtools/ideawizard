@@ -24,6 +24,7 @@
 - Keys: in memory by default; `localStorage` `ideawizard.key.<provider>.v1` only while "Remember key on this device" (`#keyRemember`, off by default) is ticked; never in logs or error text
 - Other storage: `ideawizard.ui.v1` (provider, model per provider, inputs); wrap every access in try/catch (`store`)
 - All model text goes into the DOM via `textContent`; run model output through the `clean*` functions before rendering
+- `structureText()` writes the plan in GP Blueprint's structure format for Lyricpad (sections, bars, lines, rhyme, syllables; story/images/line-by-line go in the description); keep it parseable by Lyricpad's `js/structure.js` and by `parseStructure` here
 - Structure text is GP Blueprint's contract (`gp-songtools/gp-blueprint` `docs/structure-format.md`); Earprint's "Copy for Idea Wizard" text is plain labelled lines starting `Earprint analysis`; both are prompt context, so wording changes there don't break parsing beyond the hints
 - Prompts: US English; no real artist or song names; concepts and directions, not finished lyrics (Lyricpad writes lyrics)
 - Add a `CHANGELOG.md` entry in the same commit as every user-facing change: today's date heading (reuse it if already at the top), Added / Changed / Fixed, plain user wording; update `README.md` when behavior changes

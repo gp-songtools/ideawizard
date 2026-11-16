@@ -15,7 +15,9 @@ export function parseStructure(text) {
     const lines = Number(/(\d+) lines\./.exec(details)?.[1] || 0);
     return {
       tag,
-      name: /^\[([^:\]]+)/.exec(tag)?.[1].trim() || tag,
+      name: tagName(tag),
+      bars: Number(/(\d+) bars/.exec(details)?.[1] || 0),
+      seconds: Number(/(\d+) secs/.exec(details)?.[1] || 0),
       lines,
       instrumental: /instrumental/i.test(details) && !lines,
       rhyme: /Rhyme: ([A-Z]+)\./.exec(details)?.[1] || "",
@@ -28,6 +30,9 @@ export function parseStructure(text) {
   if (!sections.length) return null;
   return { bpm: head[1] || "", key: (head[2] || "").trim(), sections };
 }
+
+// "[CHORUS|hint|hint]" (or the older "[CHORUS: hints]") -> "CHORUS".
+function tagName(tag) { return String(tag).replace(/^\[|\]$/g, "").split(/[|:]/)[0].trim().toUpperCase(); }
 
 export function describeStructure(st) {
   if (!st) return "";
@@ -93,7 +98,7 @@ Develop this idea into a full song plan.
 - logline: the whole song in one or two sentences
 - perspective: who sings it, to whom, and when
 - tone: how it should feel, in a few words
-- sections: ${sections} For each give the tag, the beat (what happens or is revealed there, in one or two sentences) and 2 to 4 images to use. For instrumental sections, describe what the music should carry emotionally.
+- sections: ${sections} For each give the tag, the beat (what happens or is revealed there, in one or two sentences) and 2 to 4 images to use. For instrumental sections, describe what the music should carry emotionally. Also give each section its shape: lines (lyric lines, 0 for an instrumental section), bars, and rhyme (one capital letter per lyric line, e.g. ABAB; empty for instrumental). ${structure?.sections?.length ? "Copy these from the given structure." : "Suggest ones that suit the style, e.g. 8 lines and 16 bars for a verse, 4 to 6 lines for a chorus."}
 - hook_ideas: 3 short chorus hook phrases (a few words each)
 - word_bank: 12 to 16 vivid words and short phrases that fit
 - title_options: 4 alternative titles
@@ -137,6 +142,7 @@ export function ideaText(i) {
 
 const str = { type: "string" };
 const strs = { type: "array", items: { type: "string" } };
+const int = { type: "integer" };
 const obj = (properties) => ({ type: "object", properties, required: Object.keys(properties), additionalProperties: false });
 
 export const IDEAS_SCHEMA = obj({
@@ -145,7 +151,7 @@ export const IDEAS_SCHEMA = obj({
 
 export const EXPAND_SCHEMA = obj({
   logline: str, perspective: str, tone: str,
-  sections: { type: "array", items: obj({ tag: str, beat: str, images: strs }) },
+  sections: { type: "array", items: obj({ tag: str, beat: str, images: strs, lines: int, bars: int, rhyme: str }) },
   hook_ideas: strs, word_bank: strs, title_options: strs, avoid: strs,
 });
 
@@ -168,8 +174,17 @@ export function cleanIdeas(j) {
   return ideas;
 }
 
+// One rhyme letter per line; a shorter pattern repeats with fresh letters (ABAB over 8 lines -> ABABCDCD), as in GP Blueprint and Lyricpad.
+function fitRhyme(letters, n) {
+  letters = String(letters || "").toUpperCase().replace(/[^A-Z]/g, "");
+  if (!letters || !(n > 0)) return "";
+  const span = Math.max(...[...letters].map((c) => c.charCodeAt(0) - 65)) + 1;
+  return Array.from({ length: n }, (_, i) => String.fromCharCode(65 + ((letters.charCodeAt(i % letters.length) - 65 + Math.floor(i / letters.length) * span) % 26))).join("");
+}
+const whole = (v, lo, hi) => { const x = Math.round(Number(v)); return Number.isFinite(x) ? Math.max(lo, Math.min(hi, x)) : null; };
+
 export function cleanPlan(j, structure) {
-  const sections = (Array.isArray(j?.sections) ? j.sections : []).map((x) => ({ tag: s(x?.tag, 80), beat: s(x?.beat, 600), images: list(x?.images, 6) }))
+  const sections = (Array.isArray(j?.sections) ? j.sections : []).map((x) => ({ tag: s(x?.tag, 80), beat: s(x?.beat, 600), images: list(x?.images, 6), ai: { lines: whole(x?.lines, 0, 24), bars: whole(x?.bars, 1, 64), rhyme: s(x?.rhyme, 40) } }))
     .filter((x) => x.tag && x.beat).slice(0, 16);
   if (!sections.length) throw new Error("The AI didn't return a usable song plan. Try again.");
   // Line counts and instrumental flags come from the pasted structure, matched by tag (in order).
@@ -177,7 +192,16 @@ export function cleanPlan(j, structure) {
   for (const sec of sections) {
     const i = pool.findIndex((p) => p.tag.toUpperCase() === sec.tag.toUpperCase() || p.name.toUpperCase() === (/^\[([^:\]]+)/.exec(sec.tag)?.[1] || "").trim().toUpperCase());
     sec.struct = i >= 0 ? pool.splice(i, 1)[0] : null;
-    sec.instrumental = sec.struct ? sec.struct.instrumental : /intro|outro|instrumental|solo|break/i.test(sec.tag) && !/verse|chorus|bridge|hook/i.test(sec.tag);
+    if (!sec.struct) {
+      // No pasted structure for this section: use the AI's suggested shape (marked suggested).
+      if (!/^\[.+\]$/.test(sec.tag)) sec.tag = `[${sec.tag.replace(/^\[|\]$/g, "").toUpperCase()}]`;
+      const guessInst = /intro|outro|instrumental|solo|break/i.test(sec.tag) && !/verse|chorus|bridge|hook/i.test(sec.tag);
+      const lines = sec.ai.lines ?? (guessInst ? 0 : 4);
+      sec.struct = { tag: sec.tag, name: tagName(sec.tag), lines, instrumental: !lines, bars: sec.ai.bars || (lines ? lines * 2 : 8), seconds: 0,
+        rhyme: fitRhyme(sec.ai.rhyme, lines), syllables: [], description: "", suggested: true };
+    }
+    sec.instrumental = sec.struct.instrumental;
+    delete sec.ai;
   }
   return {
     logline: s(j?.logline, 600), perspective: s(j?.perspective), tone: s(j?.tone, 200), sections,
@@ -199,6 +223,43 @@ export function lyricpadTopic(idea, plan) {
   const bits = [`${idea.title}: ${idea.topic}`, idea.angle && `Angle: ${idea.angle}`, idea.hook && `Hook: ${idea.hook}`,
     plan?.tone ? `Tone: ${plan.tone}` : idea.theme && `Theme: ${idea.theme}`];
   return bits.filter(Boolean).join(". ").replace(/\.\./g, ".");
+}
+
+// Tempo and key for the structure's first line: the pasted structure, else Earprint's analysis, else the style prompt.
+function tempoKey(structure, inputs = {}) {
+  const ep = inputs.earprint || "", st = inputs.style || "";
+  const bpm = structure?.bpm || /(?:^|\n)Tempo(?: \(estimated\))?:\s*(\d+(?:\.\d+)?)\s*BPM/i.exec(ep)?.[1] || /\b(\d{2,3})\s*BPM\b/i.exec(st)?.[1] || "";
+  const key = structure?.key || /(?:^|\n)Key(?: \(estimated\))?:\s*([^(\n]+)/i.exec(ep)?.[1]?.trim() || /\b([A-G][#b♯♭]?\s+(?:major|minor))\b/i.exec(st)?.[1] || "";
+  return { bpm, key };
+}
+
+const sentence = (t) => { t = String(t || "").replace(/\s+/g, " ").trim(); return t && !/[.!?]$/.test(t) ? t + "." : t; };
+
+/**
+ * The plan as a song structure in GP Blueprint's copy format (gp-songtools/gp-blueprint docs/structure-format.md),
+ * so Lyricpad's "Write a whole song from a structure" (and Idea Wizard itself) can read it. Section shapes come from
+ * the pasted structure, else the AI's suggestions; the story, images and any line-by-line directions go in each
+ * section's description, which Lyricpad passes to its lyric writer.
+ */
+export function structureText(plan, structure, inputs, deeper = {}) {
+  const { bpm, key } = tempoKey(structure, inputs);
+  const tempo = Number(bpm) || 120;
+  const out = [];
+  const head = [bpm && `${bpm} BPM`, key].filter(Boolean).join(", ");
+  if (head) out.push(head);
+  plan.sections.forEach((sec, n) => {
+    const st = sec.struct || {}, lines = st.lines || 0;
+    const bars = st.bars || (lines ? lines * 2 : 8);
+    const secs = st.seconds || Math.round(bars * 4 * 60 / tempo);
+    const desc = [st.suggested ? "" : st.description, `${lines ? "Story" : "Music"}: ${sentence(sec.beat)}`, sec.images.length && `Images: ${sec.images.join(", ")}.`];
+    const d = deeper[n];
+    if (d && lines) desc.push("Line by line: " + d.lines.slice(0, lines).map((l, k) => `${k + 1}) ${sentence(l.beat.replace(/[.!?]+$/, "") + (l.image ? ` (${l.image})` : "") + (l.end_word_ideas.length ? `, end words: ${l.end_word_ideas.join(", ")}` : ""))}`).join(" "));
+    const shape = lines
+      ? `${bars} bars, ${secs} secs, ${lines} lines.${st.rhyme ? ` Rhyme: ${st.rhyme}.` : ""}${st.syllables?.length ? ` Syllables: ${st.syllables.join(".")}.` : ""}`
+      : `${bars} bars, ${secs} secs, instrumental.`;
+    out.push(`${st.tag || sec.tag}\n${[shape, ...desc.filter(Boolean).map(sentence)].join(" ").replace(/\s+/g, " ").trim()}`);
+  });
+  return out.join("\n\n");
 }
 
 export function fullIdeaText(idea, plan, deeper = {}) {

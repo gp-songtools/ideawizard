@@ -184,17 +184,19 @@ function fitRhyme(letters, n) {
 const whole = (v, lo, hi) => { const x = Math.round(Number(v)); return Number.isFinite(x) ? Math.max(lo, Math.min(hi, x)) : null; };
 
 export function cleanPlan(j, structure) {
-  const sections = (Array.isArray(j?.sections) ? j.sections : []).map((x) => ({ tag: s(x?.tag, 80), beat: s(x?.beat, 600), images: list(x?.images, 6), ai: { lines: whole(x?.lines, 0, 24), bars: whole(x?.bars, 1, 64), rhyme: s(x?.rhyme, 40) } }))
+  const sections = (Array.isArray(j?.sections) ? j.sections : []).map((x) => ({ tag: s(x?.tag, 600), beat: s(x?.beat, 600), images: list(x?.images, 6), ai: { lines: whole(x?.lines, 0, 24), bars: whole(x?.bars, 1, 64), rhyme: s(x?.rhyme, 40) } }))
     .filter((x) => x.tag && x.beat).slice(0, 16);
   if (!sections.length) throw new Error("The AI didn't return a usable song plan. Try again.");
   // Line counts and instrumental flags come from the pasted structure, matched by tag (in order).
   const pool = structure?.sections ? [...structure.sections] : [];
   for (const sec of sections) {
-    const i = pool.findIndex((p) => p.tag.toUpperCase() === sec.tag.toUpperCase() || p.name.toUpperCase() === (/^\[([^:\]]+)/.exec(sec.tag)?.[1] || "").trim().toUpperCase());
+    const i = pool.findIndex((p) => p.tag.toUpperCase() === sec.tag.toUpperCase() || p.name === tagName(sec.tag));
     sec.struct = i >= 0 ? pool.splice(i, 1)[0] : null;
-    if (!sec.struct) {
+    if (sec.struct) sec.tag = sec.struct.tag; // keep the pasted tag exactly, hints and all
+    else {
       // No pasted structure for this section: use the AI's suggested shape (marked suggested).
-      if (!/^\[.+\]$/.test(sec.tag)) sec.tag = `[${sec.tag.replace(/^\[|\]$/g, "").toUpperCase()}]`;
+      // Close an unclosed tag; capitalize only the section name, not its hints.
+      if (!/^\[.+\]$/.test(sec.tag)) sec.tag = `[${sec.tag.replace(/^\[|\]$/g, "").trim().replace(/^[^|:]+/, (m) => m.toUpperCase())}]`;
       const guessInst = /intro|outro|instrumental|solo|break/i.test(sec.tag) && !/verse|chorus|bridge|hook/i.test(sec.tag);
       const lines = sec.ai.lines ?? (guessInst ? 0 : 4);
       sec.struct = { tag: sec.tag, name: tagName(sec.tag), lines, instrumental: !lines, bars: sec.ai.bars || (lines ? lines * 2 : 8), seconds: 0,

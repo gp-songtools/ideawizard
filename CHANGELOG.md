@@ -2,6 +2,12 @@
 
 All notable changes to Idea Wizard, newest first. The app has no version numbers, so entries are grouped by date.
 
+## 2026-11-17 — Full section tags
+
+### Fixed
+
+- Long section tags (with style hints, like `[CHORUS|anthemic gang vocals|full band]`) are no longer cut short or missing their closing bracket in the song plan and the copied text, so they paste cleanly into Suno and Lyricpad. Tags from your pasted GP Blueprint structure are now kept exactly as written.
+
 ## 2026-11-16 — Copy song structure
 
 ### Added

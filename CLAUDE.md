@@ -33,5 +33,5 @@
 - Check layout at 390 px and 1280 px; `document.documentElement.scrollWidth` must equal the viewport width
 
 ## Git workflow
-- Workflow not yet set by the owner: use a branch + pull request to `main` unless told otherwise
+- Owner's standing instruction: open a pull request to `main` and merge it yourself once the checks below pass; no need to ask
 - Run the syntax check and a mocked UI check before every push

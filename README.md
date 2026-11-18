@@ -17,9 +17,17 @@ Live at https://gp-songtools.github.io/ideawizard/
 5. **Go deeper** on a sung section for one direction per lyric line, following its rhyme scheme and syllable targets, with end-word ideas.
 6. **Copy for Lyricpad** puts the idea in one line for [Lyricpad](https://gp-songtools.github.io/lyricpad/)'s Suggest lines › Topic / feel box, where it can write the lyrics (with GP Blueprint's structure, via *Write a whole song from a structure*). **Copy song structure** copies the plan in GP Blueprint's structure format: each section's bars, line count and rhyme scheme (from your pasted structure, or suggested), with its story, images and any line-by-line directions. Paste it into Lyricpad's *Write a whole song from a structure* to have the lyrics follow the plan. **Copy the whole plan** copies everything as text.
 
+## Song spec
+
+Idea Wizard reads and writes the GP Song Tools [song spec](https://github.com/gp-songtools/toolsmenu/blob/main/songspec/SPEC.md), one file per song that every tool fills in its own part of, shared in this browser.
+
+- **Reads, all optional:** GP Blueprint's Style and Structure, and Earprint's Analysis (**From the song spec › Use**). Without them, paste or type as before.
+- **Writes** (**Save to song spec**): Idea (the idea, plus the plan's logline, tone, hooks and word bank once expanded) and Idea structure (the plan in GP Blueprint's structure format, which Lyricpad offers next to GP Blueprint's).
+- Code: `spec.js` (no DOM; tests in `tests/spec.test.mjs`, run `node --test tests/*.test.mjs`). `songspec.js` is a copy of the toolsmenu library: never edit it here.
+
 ## Privacy & credits
 
-No server or account of its own. Your inputs and the chosen idea go from your browser straight to the AI provider you pick, under your own key, and only when you press a button that asks for ideas. The key is held in memory and forgotten when you close the tab unless you tick **Remember key on this device** (off by default). Your inputs, provider and model choice are kept in this browser so they survive a reload. Pages load Cloudflare Web Analytics, shared by all GP Song Tools, for anonymous visit counts (no cookies; it never sees your inputs, ideas or key). Details: [Privacy & credits](https://gp-songtools.github.io/toolsmenu/privacy.html).
+No server or account of its own. **Save to song spec** keeps the idea in this browser's shared song spec (never sent anywhere by itself); **Use** puts song spec text into the boxes, which go to the AI provider when you ask for ideas. Your inputs and the chosen idea go from your browser straight to the AI provider you pick, under your own key, and only when you press a button that asks for ideas. The key is held in memory and forgotten when you close the tab unless you tick **Remember key on this device** (off by default). Your inputs, provider and model choice are kept in this browser so they survive a reload. Pages load Cloudflare Web Analytics, shared by all GP Song Tools, for anonymous visit counts (no cookies; it never sees your inputs, ideas or key). Details: [Privacy & credits](https://gp-songtools.github.io/toolsmenu/privacy.html).
 
 Credits: Claude requests use the official [Anthropic TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript) (MIT), bundled at `vendor/anthropic-sdk-1.3.0.js` so the site doesn't depend on a CDN. Gemini requests use Google's REST API, and Groq requests use its OpenAI-compatible API.
 
@@ -42,6 +50,9 @@ ideawizard/
 ├── app.js          UI: inputs, provider and key, ideas, plan, line-by-line, copying
 ├── prompts.js      prompts, JSON schemas, structure parsing, cleaning model output (no DOM)
 ├── providers.js    Claude (bundled SDK), Gemini and Groq clients
+├── spec.js         song spec: what it offers, saving Idea and Idea structure (no DOM)
+├── songspec.js     copy of gp-songtools/toolsmenu songspec/songspec.js (never edit here)
+├── tests/          song spec tests (node --test tests/*.test.mjs)
 ├── vendor/         anthropic-sdk-1.3.0.js (unmodified)
 ├── changelog.html  renders CHANGELOG.md in the browser
 ├── CHANGELOG.md    user-facing changes by date

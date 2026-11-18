@@ -3,21 +3,24 @@
 ## Project
 - Idea Wizard: song ideas from GP Blueprint's style prompt + song structure and Earprint's analysis; one of the GP Song Tools
 - Live: https://gp-songtools.github.io/ideawizard/ (GitHub Pages, `main` branch, root)
-- Static ES modules, no build step, no package.json, no tests dir
+- Static ES modules, no build step, no package.json; `tests/` holds the song spec tests
 
 ## Directory map
 - `index.html`, `styles.css`, `app.js` — page, styles (violet accent, light/dark via `prefers-color-scheme`), UI and state
 - `prompts.js` — system prompt, the three request prompts (ideas → plan → line by line), JSON schemas, `parseStructure`, `clean*` validators, hand-off text; no DOM
 - `providers.js` — `ask()` for Claude (bundled SDK, structured outputs), Gemini (REST `responseSchema` via `toGeminiSchema`), Groq (OpenAI-compatible, `json_object` + schema in the prompt); `listModels`, `defaultModel`
+- `spec.js` — song spec: offers Style/Structure/Analysis to the boxes, writes Idea + Idea structure (no DOM); `songspec.js` — copy of gp-songtools/toolsmenu `songspec/songspec.js`, never edit here; `tests/spec.test.mjs`
 - `vendor/anthropic-sdk-1.3.0.js` — official Anthropic SDK, unmodified (same file as Lyricpad's); it sends the API key as `Authorization: Bearer`
 - `changelog.html` (renders `CHANGELOG.md`; edit only the `.md`), `README.md`, `.nojekyll`
 
 ## Commands
 - Serve: `python3 -m http.server 8092 >/dev/null 2>&1 &` → `http://localhost:8092/`
-- Syntax check (ES modules): `for f in app.js prompts.js providers.js; do cp $f /tmp/x.mjs && node --check /tmp/x.mjs || echo "FAIL $f"; done`
+- Song spec tests: `node --test tests/*.test.mjs` (no dependencies)
+- Syntax check (ES modules): `for f in app.js prompts.js providers.js spec.js; do cp $f /tmp/x.mjs && node --check /tmp/x.mjs || echo "FAIL $f"; done`
 - UI check: Playwright + Chromium preinstalled; mock `api.anthropic.com`, `generativelanguage.googleapis.com` and `api.groq.com` with `page.route` (pick the reply by the prompt text: "Come up with exactly 3", "Develop this idea", "Zoom in on"); never make real AI calls; fail on `pageerror`/console errors
 
 ## Rules
+- Song spec (format: gp-songtools/toolsmenu `songspec/SPEC.md`): Idea Wizard owns only Idea and Idea structure; it only reads Style, Structure and Analysis, and must work unchanged without them. A save without a plan empties Idea structure. Update `songspec.js` only by copying it from toolsmenu (`node toolsmenu/songspec/check-copies.js`).
 - Claude default model `claude-opus-5-5` (owner can choose Sonnet 5.5 / Haiku 5.5 in the menu); `output_config: {effort: "medium", format: json_schema}`; server-side refusal fallback (`server-side-fallback-2026-07-01`, `fallbacks: "default"`) except on Haiku; check `stop_reason` `refusal` / `max_tokens`
 - Gemini: key only in the `x-goog-api-key` header, never in a URL; default model = newest stable `gemini-N-flash` from ListModels
 - Groq: `Authorization: Bearer`; default model from a preference list (`defaultModel`), else the first suitable one

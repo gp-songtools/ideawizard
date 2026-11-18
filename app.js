@@ -4,6 +4,7 @@ import {
   ideasPrompt, expandPrompt, deeperPrompt, IDEAS_SCHEMA, EXPAND_SCHEMA, DEEPER_SCHEMA,
   cleanIdeas, cleanPlan, cleanDeeper, lyricpadTopic, structureText, fullIdeaText,
 } from "./prompts.js";
+import { SongSpec, specInputs, usedSections, usedText, specWriteIdea, overwriteNotes, BOXES, LABELS } from "./spec.js";
 
 const $ = (id) => document.getElementById(id);
 const UI_KEY = "ideawizard.ui.v1";
@@ -24,7 +25,7 @@ const saveUI = () => store.set(UI_KEY, JSON.stringify(ui));
 const keys = {}; // provider → key, held in memory
 for (const p of Object.keys(PROVIDERS)) { const k = store.get(keyStoreName(p)); if (k) keys[p] = k; }
 
-const state = { ideas: [], plans: {}, deeper: {}, open: null, busy: false };
+const state = { ideas: [], plans: {}, deeper: {}, open: null, busy: false, usedIdeas: [], usedPlans: {} };
 const modelCache = {}; // provider → [{id,label}]
 const INPUTS = ["style", "structure", "earprint", "steer"];
 
@@ -49,12 +50,63 @@ function refreshInputHints() {
 
 for (const id of INPUTS) {
   $(id).value = typeof ui.inputs[id] === "string" ? ui.inputs[id] : "";
-  $(id).addEventListener("input", () => { ui.inputs[id] = $(id).value; saveUI(); refreshInputHints(); });
+  $(id).addEventListener("input", () => { ui.inputs[id] = $(id).value; saveUI(); refreshInputHints(); renderSpecIn(); });
 }
 $("clearInputs").onclick = () => {
   for (const id of INPUTS) { $(id).value = ""; ui.inputs[id] = ""; }
-  saveUI(); refreshInputHints(); $("style").focus();
+  saveUI(); refreshInputHints(); renderSpecIn(); $("style").focus();
 };
+
+// ---------- the song spec (shared by the GP Song Tools in this browser; see spec.js) ----------
+// Everything read from it is optional: Use fills a box, and the boxes work the same without it.
+
+let specIn = specInputs(SongSpec.parse(SongSpec.store.load() || SongSpec.create()));
+const specPanel = SongSpec.mountPanel($("specPanel"), { onChange: (d) => { specIn = specInputs(d); renderSpecIn(); } });
+
+function fillBox(box, text) {
+  $(box).value = text;
+  $(box).dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function renderSpecIn() {
+  const box = $("specIn");
+  const avail = Object.keys(BOXES).filter((id) => specIn[id]);
+  box.hidden = !avail.length;
+  if (!avail.length) return;
+  const used = usedSections(specIn, inputs());
+  const rows = [el("p", "spec-in-head", "From the song spec"), el("p", "hint", "Optional: fill a box from what the other GP Song Tools saved, or ignore it.")];
+  for (const id of avail) {
+    const row = el("div", "spec-in-row");
+    row.append(el("span", "spec-in-text", `${LABELS[id]} from ${SongSpec.toolName(specIn[id].by)} · ${[...specIn[id].text].length} characters`));
+    if (used.includes(id)) row.append(el("span", "spec-ok", "In use"));
+    else { const b = el("button", "ghost small", "Use"); b.type = "button"; b.onclick = () => fillBox(BOXES[id], specIn[id].text); row.append(b); }
+    rows.push(row);
+  }
+  const rest = avail.filter((id) => !used.includes(id));
+  if (rest.length > 1) {
+    const b = el("button", "ghost small", "Use all"); b.type = "button";
+    b.onclick = () => { for (const id of rest) fillBox(BOXES[id], specIn[id].text); };
+    const row = el("div", "spec-in-row"); row.append(b); rows.push(row);
+  }
+  if (used.length) rows.push(el("p", "hint ok", `The ideas will use from the song spec: ${usedText(specIn, used)}.`));
+  box.replaceChildren(...rows);
+}
+
+// Save one idea (and its plan, if expanded) as the song spec's Idea and Idea structure.
+function saveToSpec(i, msgEl) {
+  const idea = state.ideas[i], plan = state.plans[i] || null;
+  const fresh = SongSpec.parse(SongSpec.store.load() || SongSpec.create());
+  const notes = overwriteNotes(fresh);
+  if (notes.length && !confirm(`${notes.join("\n")}\n\nReplace them with “${idea.title}”?`)) return;
+  const deep = plan ? Object.fromEntries(plan.sections.map((_, n) => [n, state.deeper[`${i}:${n}`]]).filter(([, v]) => v)) : {};
+  const used = plan ? state.usedPlans[i] || [] : state.usedIdeas;
+  const doc = SongSpec.store.update((d) => specWriteIdea(d, { idea, plan, deeper: deep, structure: structure(), inputs: inputs(), used }));
+  if (SongSpec.store.load() !== SongSpec.serialize(doc)) { msgEl.textContent = "This browser blocked saving the song spec (private mode or storage full)."; return; }
+  msgEl.textContent = plan
+    ? "Saved to the song spec: the idea and its song structure (Idea structure), which Lyricpad can use."
+    : "Saved the idea to the song spec. Expand it and save again to add its song structure.";
+}
+
 
 // ---------- provider, key, model ----------
 
@@ -164,10 +216,12 @@ async function conjure(more = false) {
   if (!keys[provider()]) { setStatus(`Paste your ${PROVIDERS[provider()].name} API key first.`, true); $("key").focus(); return; }
   if (!$("model").value) { await maybeLoadModels(); if (!$("model").value) { setStatus("Choose a model first.", true); return; } }
   const avoid = more ? state.ideas.map((i) => i.title) : [];
+  const used = usedSections(specIn, inputs());
   const j = await run(more ? "Conjuring 3 more ideas…" : "Conjuring 3 ideas…", () => request(ideasPrompt(inputs(), avoid), IDEAS_SCHEMA));
   if (!j) return;
   try { state.ideas = cleanIdeas(j); } catch (err) { setStatus(err.message, true); return; }
-  state.plans = {}; state.deeper = {}; state.open = null;
+  state.plans = {}; state.deeper = {}; state.open = null; state.usedIdeas = used; state.usedPlans = {};
+  if (used.length) setStatus(`Used from the song spec: ${usedText(specIn, used)}.`);
   renderIdeas(); $("detail").hidden = true;
   $("results").hidden = false;
   $("results").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -195,7 +249,10 @@ function renderIdeas() {
     const cp = el("button", "ghost", "Copy for Lyricpad"); cp.type = "button";
     const msg = el("span", "copied"); msg.setAttribute("role", "status");
     cp.onclick = () => copy(lyricpadTopic(idea, state.plans[i]), msg, "Copied. Paste it into Lyricpad's Topic / feel box.");
-    act.append(ex, cp, msg); li.append(act);
+    const sv = el("button", "ghost", "Save to song spec"); sv.type = "button";
+    sv.title = "Save this idea (and its plan, if expanded) to the song spec the GP Song Tools share";
+    sv.onclick = () => saveToSpec(i, msg);
+    act.append(ex, cp, sv, msg); li.append(act);
     ol.append(li);
   });
 }
@@ -205,9 +262,12 @@ function renderIdeas() {
 async function expand(i) {
   if (!state.plans[i]) {
     const idea = state.ideas[i], st = structure();
+    const used = usedSections(specIn, inputs());
     const j = await run(`Expanding “${idea.title}”…`, () => request(expandPrompt(inputs(), idea, st), EXPAND_SCHEMA));
     if (!j) return;
     try { state.plans[i] = cleanPlan(j, st); } catch (err) { setStatus(err.message, true); return; }
+    state.usedPlans[i] = used;
+    if (used.length) setStatus(`Used from the song spec: ${usedText(specIn, used)}.`);
   }
   state.open = i; renderIdeas(); renderDetail();
   $("detail").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -272,7 +332,10 @@ function renderDetail() {
   const cf = el("button", "ghost", "Copy the whole plan"); cf.type = "button";
   cf.onclick = () => copy(fullIdeaText(idea, plan, Object.fromEntries(plan.sections.map((_, n) => [n, state.deeper[`${i}:${n}`]]).filter(([, v]) => v))), msg, "Copied the whole plan as text.");
   const lp = el("a", null, "Open Lyricpad"); lp.href = "https://gp-songtools.github.io/lyricpad/"; lp.target = "_blank"; lp.rel = "noopener";
-  act.append(cl, cs, cf, lp, msg); box.append(act);
+  const sv = el("button", null, "Save to song spec"); sv.type = "button";
+  sv.title = "Save the idea and this plan's song structure to the song spec, where Lyricpad can use it";
+  sv.onclick = () => saveToSpec(i, msg);
+  act.append(cl, cs, sv, cf, lp, msg); box.append(act);
 }
 
 // ---------- level 3: line by line ----------
@@ -299,5 +362,6 @@ async function copy(text, msgEl, okMsg) {
 // ---------- start ----------
 
 refreshInputHints();
+renderSpecIn();
 renderProvider();
 maybeLoadModels();

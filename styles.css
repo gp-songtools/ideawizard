@@ -79,3 +79,12 @@ main{display:flex;flex-direction:column;gap:16px;padding-bottom:32px}
 .foot a{color:inherit}
 .foot a:hover{color:var(--ac)}
 @media(max-width:900px){.inputs,.ideas,.plan-meta,.extras{grid-template-columns:minmax(0,1fr)}.ai-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* Song spec (shared with the other GP Song Tools; panel drawn by songspec.js) */
+.spec-panel{color:var(--ink)}
+.spec-in{border:1px solid var(--ln);border-radius:12px;padding:10px 12px;margin:10px 0;background:var(--soft)}
+.spec-in p{margin:2px 0}
+.spec-in-head{font-weight:600}
+.spec-in-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:6px 0}
+.spec-in-text{flex:1 1 12rem;min-width:0;overflow-wrap:anywhere}
+.spec-ok{color:var(--ok);font-weight:600}

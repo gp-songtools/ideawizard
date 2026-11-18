@@ -2,6 +2,14 @@
 
 All notable changes to Idea Wizard, newest first. The app has no version numbers, so entries are grouped by date.
 
+## 2026-11-18 — Song spec
+
+### Added
+
+- **Song spec**: the song file shared by the GP Song Tools in this browser. A panel at the top shows which tool filled each part and when, and lets you clear a part, start a new song, open a `.songspec.md` file or download one to hand to Claude.
+- **From the song spec** under Your sound: when GP Blueprint saved its style prompt and song structure, or Earprint its analysis, fill each box with **Use** (or **Use all**). The status line says what the ideas and plan used. All optional: with nothing saved, Idea Wizard works as before.
+- **Save to song spec** on each idea and on its plan saves the idea, and once expanded its song structure, for Lyricpad to use. Saving an idea that isn't expanded clears the previous plan's structure, so it never sits next to a different idea.
+
 ## 2026-11-17 — Full section tags
 
 ### Fixed

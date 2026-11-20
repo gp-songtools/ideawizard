@@ -2,95 +2,139 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧙</text></svg>">
+<link rel="icon" href="mark.svg" type="image/svg+xml">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Idea Wizard</title>
 <meta name="description" content="Turn a GP Blueprint style prompt, a song structure and an Earprint analysis into three song ideas, then drill into each one.">
+<meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101923" media="(prefers-color-scheme: dark)">
+<link rel="preload" href="fonts/outfit.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/work-sans.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header class="top">
-  <div class="brand">
-    <h1><span aria-hidden="true">🧙</span> Idea Wizard</h1>
-    <p class="sub">Song ideas that fit your sound. Paste in what GP Blueprint and Earprint gave you, get three ideas, and drill into the one you like.</p>
-  </div>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <nav class="site-nav shell" aria-label="Site">
+    <a class="wordmark" translate="no" href="./"><img src="mark.svg" alt="" width="36" height="36"> Ideawizard</a>
+    <a href="changelog.html">Changelog</a>
+  </nav>
 </header>
 
-<main>
+<main class="shell" id="main" tabindex="-1">
+  <div class="intro">
+    <div class="intro-copy">
+      <h1>Find your next song idea.</h1>
+      <p class="sub">Turn a topic and a song structure into three starting points. Expand the one you like into a section-by-section plan.</p>
+      <p class="hint">Generate ideas with your own Claude, Gemini or Groq API key.</p>
+    </div>
+    <aside class="example" aria-labelledby="exampleTitle">
+      <div class="example-head">
+        <span>Example brief</span>
+        <span class="example-tempo">96 BPM</span>
+      </div>
+      <h2 id="exampleTitle">The last bus home</h2>
+      <p>Indie soul about leaving your hometown.</p>
+      <ul class="arrangement" aria-label="Example song arrangement">
+        <li>Verse <span><b>16</b> bars</span></li>
+        <li>Chorus <span><b>8</b> bars</span></li>
+        <li>Bridge <span><b>8</b> bars</span></li>
+      </ul>
+      <button type="button" class="ghost" id="loadExample">Load example brief</button>
+      <details class="example-output">
+        <summary>See a sample idea</summary>
+        <h3>One Stop Past Home</h3>
+        <p>The last bus pulls away while the corner shop is still open. A nervous goodbye turns into permission to start over.</p>
+        <dl>
+          <dt>Verse</dt><dd>Follow the familiar shop lights as they slip past the glass.</dd>
+          <dt>Chorus</dt><dd>Let the melody open up as the rider looks ahead.</dd>
+          <dt>Bridge</dt><dd>Strip back to keys for a voice note the rider records and deletes.</dd>
+        </dl>
+      </details>
+    </aside>
+  </div>
+
   <div id="specPanel" class="spec-panel"></div>
-  <section class="card" aria-labelledby="h-sound">
-    <div class="card-head">
-      <h2 id="h-sound"><span class="step">1</span> Your sound</h2>
-      <button type="button" class="ghost small" id="clearInputs">Clear</button>
-    </div>
-    <p class="hint">A style prompt or a track analysis is all you need (or just a direction in Steer it). Add more and the ideas fit your song more closely; the song structure is optional and shapes the plan.</p>
-    <div id="specIn" class="spec-in" hidden></div>
-    <div class="inputs">
-      <div class="field">
-        <label for="style">Style prompt <span class="opt">from GP Blueprint</span></label>
-        <textarea id="style" rows="6" placeholder="Paste the Suno Style Prompt (GP Blueprint › Suno Style Prompt › Copy)"></textarea>
-        <p class="hint">In <a href="https://gp-songtools.github.io/gp-blueprint/" target="_blank" rel="noopener">GP Blueprint</a>, press <b>Copy</b> on the Suno Style Prompt card. Any style description works too.</p>
+  <div class="workspace">
+    <section class="card brief" aria-labelledby="h-sound">
+      <div class="card-head">
+        <h2 id="h-sound"><span class="step">1</span> Song brief</h2>
+        <button type="button" class="ghost small" id="clearInputs">Clear brief</button>
       </div>
+      <p class="status err" id="briefError" role="status"></p>
+      <p class="hint">Start with a topic, a style prompt or a track analysis. Add a song structure to shape the writing plan.</p>
+      <div id="specIn" class="spec-in" hidden></div>
       <div class="field">
-        <label for="structure">Song structure <span class="opt">optional · from GP Blueprint</span></label>
-        <textarea id="structure" rows="6" spellcheck="false" placeholder="[VERSE 1: half-spoken, tense]&#10;16 bars, 43 secs, 8 lines. Rhyme: ABABCDCD. …"></textarea>
-        <p class="hint" id="structInfo">Refines the plan to your exact sections and line counts. In GP Blueprint, press <b>Copy</b> on the Song Structure &amp; Meter card.</p>
+        <label for="steer">Topic or direction</label>
+        <input id="steer" name="steer" type="text" autocomplete="off" placeholder="e.g. Leaving my hometown…">
       </div>
-      <div class="field">
-        <label for="earprint">Track analysis <span class="opt">optional · from Earprint</span></label>
-        <textarea id="earprint" rows="6" placeholder="Paste Earprint's tags (Earprint › AI review › Copy for Idea Wizard)"></textarea>
-        <p class="hint" id="epInfo">Refines the ideas to the track's mood, tempo and themes. In <a href="https://gp-songtools.github.io/earprint/" target="_blank" rel="noopener">Earprint</a>, write an AI review, then press <b>Copy for Idea Wizard</b>.</p>
-      </div>
-    </div>
-    <div class="field">
-      <label for="steer">Steer it <span class="opt">optional</span></label>
-      <input id="steer" type="text" autocomplete="off" placeholder="e.g. about my hometown, hopeful, no breakup songs">
-    </div>
-  </section>
-
-  <section class="card" aria-labelledby="h-ai">
-    <div class="card-head"><h2 id="h-ai"><span class="step">2</span> AI</h2></div>
-    <div class="seg" role="radiogroup" aria-label="AI provider">
-      <label><input type="radio" name="provider" value="claude"><span>Claude</span></label>
-      <label><input type="radio" name="provider" value="gemini"><span>Gemini</span></label>
-      <label><input type="radio" name="provider" value="groq"><span>Groq</span></label>
-    </div>
-    <div class="ai-grid">
-      <div class="field">
-        <label for="key" id="keyLabel">API key</label>
-        <div class="row">
-          <input id="key" type="password" autocomplete="off" spellcheck="false">
-          <button type="button" class="ghost" id="keyShow">Show</button>
-          <button type="button" class="ghost" id="keyForget">Forget</button>
+      <div class="inputs">
+        <div class="field">
+          <label for="style">Style prompt <span class="opt">from GP Blueprint</span></label>
+          <textarea id="style" name="style" autocomplete="off" aria-describedby="styleInfo briefError" rows="4" placeholder="e.g. Indie soul with brushed drums…"></textarea>
+          <p class="hint" id="styleInfo">In <a href="https://gp-songtools.github.io/gp-blueprint/" target="_blank" rel="noopener">GP Blueprint</a>, press <b>Copy</b> on the Suno Style Prompt card. Any style description works too.</p>
         </div>
-        <label class="chk"><input type="checkbox" id="keyRemember"> Remember key on this device</label>
-        <p class="hint" id="keyNote"></p>
+        <div class="field">
+          <label for="structure">Song structure <span class="opt">optional · from GP Blueprint</span></label>
+          <textarea id="structure" name="structure" autocomplete="off" aria-describedby="structInfo" rows="4" spellcheck="false" placeholder="[VERSE 1: half-spoken, tense]&#10;16 bars, 43 secs, 8 lines. Rhyme: ABABCDCD.…"></textarea>
+          <p class="hint" id="structInfo">Refines the plan to your exact sections and line counts. In GP Blueprint, press <b>Copy</b> on the Song Structure &amp; Meter card.</p>
+        </div>
+        <div class="field">
+          <label for="earprint">Track analysis <span class="opt">optional · from Earprint</span></label>
+          <textarea id="earprint" name="earprint" autocomplete="off" aria-describedby="epInfo" rows="4" placeholder="e.g. Wistful, 96 BPM, D minor…"></textarea>
+          <p class="hint" id="epInfo">Refines the ideas to the track's mood, tempo and themes. In <a href="https://gp-songtools.github.io/earprint/" target="_blank" rel="noopener">Earprint</a>, write an AI review, then press <b>Copy for Idea Wizard</b>.</p>
+        </div>
       </div>
-      <div class="field">
-        <label for="model">Model</label>
-        <select id="model"></select>
-        <p class="hint" id="modelNote"></p>
+    </section>
+
+    <div class="setup">
+      <section class="card" aria-labelledby="h-ai">
+        <div class="card-head"><h2 id="h-ai"><span class="step">2</span> AI setup</h2></div>
+        <div class="seg" role="radiogroup" aria-label="AI provider">
+          <label><input type="radio" name="provider" value="claude"><span>Claude</span></label>
+          <label><input type="radio" name="provider" value="gemini"><span>Gemini</span></label>
+          <label><input type="radio" name="provider" value="groq"><span>Groq</span></label>
+        </div>
+        <div class="ai-grid">
+          <div class="field">
+            <label for="key" id="keyLabel">API key</label>
+            <div class="row">
+              <input id="key" name="key" aria-describedby="keyNote keyError" type="password" autocomplete="off" spellcheck="false">
+              <button type="button" class="ghost" id="keyShow" aria-controls="key">Show</button>
+              <button type="button" class="ghost" id="keyForget" aria-label="Forget API key">Forget</button>
+            </div>
+            <p class="status err" id="keyError" role="status"></p>
+            <label class="chk"><input type="checkbox" id="keyRemember" name="keyRemember"> Remember key on this device</label>
+            <p class="hint" id="keyNote"></p>
+          </div>
+          <div class="field">
+            <label for="model">Model</label>
+            <select id="model" name="model" aria-describedby="modelNote"></select>
+            <p class="hint" id="modelNote"></p>
+          </div>
+        </div>
+      </section>
+
+      <div class="go-row">
+        <button type="button" class="go" id="go">Generate 3 ideas</button>
+        <p class="status" id="status" role="status" aria-live="polite"></p>
       </div>
     </div>
-  </section>
-
-  <div class="go-row">
-    <button type="button" class="go" id="go">✨ Conjure 3 ideas</button>
-    <p class="status" id="status" role="status" aria-live="polite"></p>
   </div>
 
   <section id="results" hidden aria-labelledby="h-ideas">
     <div class="card-head">
-      <h2 id="h-ideas"><span class="step">3</span> Ideas</h2>
+      <h2 id="h-ideas" tabindex="-1"><span class="step">3</span> Ideas</h2>
       <button type="button" class="ghost small" id="more">More ideas</button>
     </div>
+    <p id="resultsStatus" tabindex="-1" class="status" role="status"></p>
     <ol class="ideas" id="ideas"></ol>
   </section>
 
-  <section id="detail" class="card detail" hidden aria-live="polite"></section>
+  <section id="detail" class="card detail" hidden aria-labelledby="planTitle"></section>
 </main>
 
-<footer class="foot">
+<footer class="foot shell">
   <a href="changelog.html">Changelog</a>
   <a href="https://gp-songtools.github.io/toolsmenu/privacy.html">Privacy &amp; credits</a>
   <a href="https://gp-songtools.github.io/toolsmenu/">More GP Song Tools</a>

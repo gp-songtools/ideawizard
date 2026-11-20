@@ -35,6 +35,8 @@ function inputs() { return Object.fromEntries(INPUTS.map((id) => [id, $(id).valu
 function structure() { return parseStructure($("structure").value); }
 
 function refreshInputHints() {
+  setStatus("", false, false, $("briefError"));
+  $("style").removeAttribute("aria-invalid");
   const st = structure();
   const sTxt = $("structure").value.trim();
   const si = $("structInfo");
@@ -53,8 +55,39 @@ for (const id of INPUTS) {
   $(id).addEventListener("input", () => { ui.inputs[id] = $(id).value; saveUI(); refreshInputHints(); renderSpecIn(); });
 }
 $("clearInputs").onclick = () => {
+  if (INPUTS.some((id) => $(id).value.trim()) && !confirm("Clear the saved song brief?")) return;
   for (const id of INPUTS) { $(id).value = ""; ui.inputs[id] = ""; }
   saveUI(); refreshInputHints(); renderSpecIn(); $("style").focus();
+};
+
+const EXAMPLE = {
+  steer: "Leaving my hometown on the last bus, feeling scared and hopeful at the same time.",
+  style: "96 BPM indie soul in D minor, brushed drums, warm electric piano and unhurried bass. An intimate verse opens into a lifted chorus with close backing harmonies.",
+  structure: `96 BPM, D minor
+
+[VERSE: intimate, half-spoken]
+16 bars, 40 secs, 8 lines. Rhyme: ABABCDCD.
+
+[CHORUS: open, with backing harmonies]
+8 bars, 20 secs, 4 lines. Rhyme: ABAB.
+
+[BRIDGE: stripped down]
+8 bars, 20 secs, 4 lines. Rhyme: ABCB.`,
+  earprint: "Earprint analysis\nGenres: Indie soul, alternative R&B\nMoods: Wistful, warm, quietly hopeful\nTempo: 96 BPM\nKey: D minor\nInstruments: Electric piano, brushed drums, bass, backing vocals",
+};
+
+$("loadExample").onclick = () => {
+  const current = inputs();
+  if (INPUTS.some((id) => current[id].trim() && current[id] !== EXAMPLE[id])
+    && !confirm("Replace the current brief with the example?")) return;
+  for (const id of INPUTS) {
+    $(id).value = EXAMPLE[id];
+    ui.inputs[id] = EXAMPLE[id];
+  }
+  saveUI();
+  refreshInputHints();
+  renderSpecIn();
+  $("steer").focus();
 };
 
 // ---------- the song spec (shared by the GP Song Tools in this browser; see spec.js) ----------
@@ -113,10 +146,12 @@ function saveToSpec(i, msgEl) {
 function provider() { return ui.provider; }
 
 function renderProvider() {
+  setStatus("", false, false, $("keyError"));
+  $("key").removeAttribute("aria-invalid");
   const p = provider(), info = PROVIDERS[p];
   for (const r of document.querySelectorAll('input[name="provider"]')) r.checked = r.value === p;
   $("keyLabel").textContent = `${info.name} API key`;
-  $("key").placeholder = `Paste your ${info.name} key (${info.keyHint})`;
+  $("key").placeholder = info.keyHint;
   $("key").value = keys[p] || "";
   $("key").type = "password"; $("keyShow").textContent = "Show";
   $("keyRemember").checked = !!store.get(keyStoreName(p));
@@ -132,6 +167,8 @@ for (const r of document.querySelectorAll('input[name="provider"]')) {
 }
 
 function syncKey() {
+  setStatus("", false, false, $("keyError"));
+  $("key").removeAttribute("aria-invalid");
   const p = provider(), k = $("key").value.trim();
   keys[p] = k;
   store.set(keyStoreName(p), $("keyRemember").checked && k ? k : null);
@@ -141,7 +178,9 @@ $("key").addEventListener("input", () => { syncKey(); clearTimeout(keyTimer); ke
 $("keyRemember").addEventListener("change", syncKey);
 $("keyShow").onclick = () => { const k = $("key"); k.type = k.type === "password" ? "text" : "password"; $("keyShow").textContent = k.type === "password" ? "Show" : "Hide"; };
 $("keyForget").onclick = () => {
-  const p = provider(); keys[p] = ""; $("key").value = ""; $("keyRemember").checked = false;
+  const p = provider();
+  if (keys[p] && !confirm(`Forget the saved ${PROVIDERS[p].name} key?`)) return;
+  keys[p] = ""; $("key").value = ""; $("keyRemember").checked = false;
   store.set(keyStoreName(p), null); delete modelCache[p]; renderModels(); setStatus(`${PROVIDERS[p].name} key removed from this page.`);
 };
 
@@ -185,20 +224,29 @@ async function maybeLoadModels() {
 
 // ---------- status ----------
 
-function setStatus(msg, isErr = false, busy = false) {
-  const s = $("status"); s.textContent = msg || ""; s.className = "status" + (isErr ? " err" : "") + (busy ? " busy" : "");
+function setStatus(msg, isErr = false, busy = false, s = $("status")) {
+  s.textContent = msg || ""; s.className = "status" + (isErr ? " err" : "") + (busy ? " busy" : "");
 }
 function setBusy(b) {
   state.busy = b;
   for (const el of document.querySelectorAll("#go, #more, .idea button, #detail button")) el.disabled = b;
 }
 
-async function run(label, fn) {
+function reveal(target) {
+  target.focus({ preventScroll: true });
+  target.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
+}
+
+async function run(label, fn, feedback = $("status")) {
   if (state.busy) return null;
-  setBusy(true); setStatus(label, false, true);
-  try { const r = await fn(); setStatus(""); return r; }
-  catch (err) { setStatus(err.message || String(err), true); return null; }
-  finally { setBusy(false); }
+  const trigger = document.activeElement;
+  setBusy(true); setStatus(label, false, true, feedback);
+  try { const r = await fn(); setStatus("", false, false, feedback); return r; }
+  catch (err) { setStatus(err.message || String(err), true, false, feedback); return null; }
+  finally {
+    setBusy(false);
+    if (document.activeElement === document.body && trigger instanceof HTMLButtonElement) trigger.focus();
+  }
 }
 
 function request(user, schema) {
@@ -212,19 +260,36 @@ function hasInput() { return ["style", "earprint", "steer"].some((id) => $(id).v
 // ---------- level 1: three ideas ----------
 
 async function conjure(more = false) {
-  if (!hasInput()) { setStatus("Paste a style prompt or an Earprint analysis, or type a direction in Steer it, first. The song structure is optional.", true); $("style").focus(); return; }
-  if (!keys[provider()]) { setStatus(`Paste your ${PROVIDERS[provider()].name} API key first.`, true); $("key").focus(); return; }
-  if (!$("model").value) { await maybeLoadModels(); if (!$("model").value) { setStatus("Choose a model first.", true); return; } }
+  const feedback = more ? $("resultsStatus") : $("status");
+  if (!hasInput()) {
+    $("style").setAttribute("aria-invalid", "true");
+    setStatus("Enter a topic, a style prompt, or a track analysis to get started.", true, false, $("briefError"));
+    $("style").focus();
+    return;
+  }
+  if (!keys[provider()]) {
+    $("key").setAttribute("aria-invalid", "true");
+    setStatus(`Paste your ${PROVIDERS[provider()].name} API key first.`, true, false, $("keyError"));
+    $("key").focus();
+    return;
+  }
+  if (!$("model").value) {
+    await maybeLoadModels();
+    if (!$("model").value) {
+      setStatus("Choose a model first.", true, false, feedback);
+      return;
+    }
+  }
   const avoid = more ? state.ideas.map((i) => i.title) : [];
   const used = usedSections(specIn, inputs());
-  const j = await run(more ? "Conjuring 3 more ideas…" : "Conjuring 3 ideas…", () => request(ideasPrompt(inputs(), avoid), IDEAS_SCHEMA));
+  const j = await run(more ? "Generating 3 more ideas…" : "Generating 3 ideas…", () => request(ideasPrompt(inputs(), avoid), IDEAS_SCHEMA), feedback);
   if (!j) return;
-  try { state.ideas = cleanIdeas(j); } catch (err) { setStatus(err.message, true); return; }
+  try { state.ideas = cleanIdeas(j); } catch (err) { setStatus(err.message, true, false, feedback); return; }
   state.plans = {}; state.deeper = {}; state.open = null; state.usedIdeas = used; state.usedPlans = {};
-  if (used.length) setStatus(`Used from the song spec: ${usedText(specIn, used)}.`);
+  setStatus(used.length ? `Used from the song spec: ${usedText(specIn, used)}.` : "", false, false, $("resultsStatus"));
   renderIdeas(); $("detail").hidden = true;
   $("results").hidden = false;
-  $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+  reveal($("h-ideas"));
 }
 $("go").onclick = () => conjure(false);
 $("more").onclick = () => conjure(true);
@@ -245,7 +310,7 @@ function renderIdeas() {
     if (idea.imagery.length) li.append(chips(idea.imagery));
     if (idea.why_it_fits) li.append(el("p", "why", idea.why_it_fits));
     const act = el("div", "actions");
-    const ex = el("button", null, state.plans[i] ? "Open plan" : "Expand ▸"); ex.type = "button"; ex.onclick = () => expand(i);
+    const ex = el("button", null, state.plans[i] ? "Open plan" : "Expand idea"); ex.type = "button"; ex.onclick = () => expand(i);
     const cp = el("button", "ghost", "Copy for Lyricpad"); cp.type = "button";
     const msg = el("span", "copied"); msg.setAttribute("role", "status");
     cp.onclick = () => copy(lyricpadTopic(idea, state.plans[i]), msg, "Copied. Paste it into Lyricpad's Topic / feel box.");
@@ -263,36 +328,42 @@ async function expand(i) {
   if (!state.plans[i]) {
     const idea = state.ideas[i], st = structure();
     const used = usedSections(specIn, inputs());
-    const j = await run(`Expanding “${idea.title}”…`, () => request(expandPrompt(inputs(), idea, st), EXPAND_SCHEMA));
-    if (!j) return;
-    try { state.plans[i] = cleanPlan(j, st); } catch (err) { setStatus(err.message, true); return; }
+    const j = await run(`Expanding “${idea.title}”…`, () => request(expandPrompt(inputs(), idea, st), EXPAND_SCHEMA), $("resultsStatus"));
+    if (!j) { reveal($("resultsStatus")); return; }
+    try { state.plans[i] = cleanPlan(j, st); } catch (err) { setStatus(err.message, true, false, $("resultsStatus")); reveal($("resultsStatus")); return; }
     state.usedPlans[i] = used;
-    if (used.length) setStatus(`Used from the song spec: ${usedText(specIn, used)}.`);
+    if (used.length) setStatus(`Used from the song spec: ${usedText(specIn, used)}.`, false, false, $("resultsStatus"));
   }
   state.open = i; renderIdeas(); renderDetail();
-  $("detail").scrollIntoView({ behavior: "smooth", block: "start" });
+  reveal($("planTitle"));
 }
 
 function renderDetail() {
   const i = state.open, idea = state.ideas[i], plan = state.plans[i], box = $("detail");
   box.innerHTML = ""; box.hidden = false;
   const head = el("div", "card-head");
-  head.append(el("h3", null, idea.title));
+  const title = el("h2", null, idea.title);
+  title.id = "planTitle";
+  title.tabIndex = -1;
+  head.append(title);
   const back = el("button", "ghost small", "Back to ideas"); back.type = "button";
-  back.onclick = () => { $("results").scrollIntoView({ behavior: "smooth", block: "start" }); };
+  back.onclick = () => reveal($("h-ideas"));
   head.append(back); box.append(head);
   box.append(el("p", null, plan.logline));
   const meta = el("div", "plan-meta");
   for (const [k, v] of [["Topic", idea.topic], ["Perspective", plan.perspective], ["Tone", plan.tone]]) { const d = el("div"); d.append(el("b", null, k), document.createTextNode(v)); meta.append(d); }
   box.append(meta);
 
-  box.append(el("h4", null, "Section by section"));
+  box.append(el("h3", null, "Section by section"));
   if (plan.sections.every((s) => s.struct?.suggested)) box.append(el("p", "hint", "A typical song layout, with suggested line counts and rhymes. Paste GP Blueprint's song structure and Expand again to plan your exact sections."));
   const secs = el("ol", "secs");
   plan.sections.forEach((sec, n) => {
     const li = el("li", "sec" + (sec.instrumental ? " inst" : ""));
     const lines = (sec.struct?.lines ? ` · ${sec.struct.lines} lines${sec.struct.rhyme ? " · " + sec.struct.rhyme : ""}` : sec.instrumental ? " · instrumental" : "") + (sec.struct?.suggested ? " (suggested)" : "");
-    li.append(el("div", "tag", sec.tag + lines), el("p", null, sec.beat));
+    const sectionTitle = el("h4", "tag", sec.tag + lines);
+    sectionTitle.id = `section-${n}`;
+    sectionTitle.tabIndex = -1;
+    li.append(sectionTitle, el("p", null, sec.beat));
     if (sec.images.length) li.append(chips(sec.images));
     const d = state.deeper[`${i}:${n}`];
     if (d) {
@@ -308,6 +379,10 @@ function renderDetail() {
     } else if (!sec.instrumental) {
       const b = el("button", "ghost small", "Go deeper: line by line"); b.type = "button"; b.onclick = () => deeper(i, n);
       const act = el("div", "actions"); act.append(b); li.append(act);
+      const feedback = el("p", "status");
+      feedback.id = `section-status-${n}`;
+      feedback.setAttribute("role", "status");
+      li.append(feedback);
     }
     secs.append(li);
   });
@@ -342,10 +417,12 @@ function renderDetail() {
 
 async function deeper(i, n) {
   const plan = state.plans[i], sec = plan.sections[n];
-  const j = await run(`Working out ${sec.tag} line by line…`, () => request(deeperPrompt(inputs(), state.ideas[i], plan, sec, sec.struct), DEEPER_SCHEMA));
+  const feedback = $(`section-status-${n}`);
+  const j = await run(`Working out ${sec.tag} line by line…`, () => request(deeperPrompt(inputs(), state.ideas[i], plan, sec, sec.struct), DEEPER_SCHEMA), feedback);
   if (!j) return;
-  try { state.deeper[`${i}:${n}`] = cleanDeeper(j, sec.struct?.lines); } catch (err) { setStatus(err.message, true); return; }
+  try { state.deeper[`${i}:${n}`] = cleanDeeper(j, sec.struct?.lines); } catch (err) { setStatus(err.message, true, false, feedback); return; }
   renderDetail();
+  reveal($(`section-${n}`));
 }
 
 // ---------- copying ----------

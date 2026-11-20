@@ -10,12 +10,14 @@ Live at https://gp-songtools.github.io/ideawizard/
    - **Style prompt**: GP Blueprint › Suno Style Prompt › **Copy** (any style description works too).
    - **Song structure** (optional): GP Blueprint › Song Structure & Meter › **Copy**. Idea Wizard reads its sections, line counts, rhyme schemes and syllables.
    - **Track analysis** (optional): Earprint › AI review › **Copy for Idea Wizard** (tempo, key, mood, genres, instruments, lyric themes).
-   - **Steer it** (optional): a direction such as "about my hometown, hopeful".
-2. **AI.** Choose Claude, Gemini or Groq and paste your own API key. Idea Wizard lists the models the key can use.
-3. **Conjure 3 ideas.** Each has a title, topic, theme, subject, angle, hook concept, imagery and why it fits.
+   - **Topic or direction**: a direction such as "about my hometown, hopeful".
+2. **AI setup.** Choose Claude, Gemini or Groq and paste your own API key. Idea Wizard lists the models the key can use.
+3. **Generate 3 ideas.** Each has a title, topic, theme, subject, angle, hook concept, imagery and why it fits.
 4. **Expand** an idea into a song plan: logline, perspective, tone, a beat and images per section (using your structure's sections), hook ideas, a word bank, other titles and clichés to avoid.
 5. **Go deeper** on a sung section for one direction per lyric line, following its rhyme scheme and syllable targets, with end-word ideas.
 6. **Copy for Lyricpad** puts the idea in one line for [Lyricpad](https://gp-songtools.github.io/lyricpad/)'s Suggest lines › Topic / feel box, where it can write the lyrics (with GP Blueprint's structure, via *Write a whole song from a structure*). **Copy song structure** copies the plan in GP Blueprint's structure format: each section's bars, line count and rhyme scheme (from your pasted structure, or suggested), with its story, images and any line-by-line directions. Paste it into Lyricpad's *Write a whole song from a structure* to have the lyrics follow the plan. **Copy the whole plan** copies everything as text.
+
+Select **Load example brief** to fill in a sample topic, style, structure and track analysis. **See a sample idea** opens an example plan without a key.
 
 ## Song spec
 

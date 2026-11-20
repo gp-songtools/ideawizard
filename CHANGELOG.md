@@ -2,6 +2,17 @@
 
 All notable changes to Idea Wizard, newest first. The app has no version numbers, so entries are grouped by date.
 
+## 2026-11-20 — Songwriting workspace
+
+### Added
+
+- Load a sample songwriting brief and preview an example idea and section plan without an API key.
+
+### Changed
+
+- The generator and changelog share a responsive design with larger labels and clearer steps.
+- Clearing a saved brief now asks for confirmation. Generation and plan controls keep feedback and keyboard focus close to the work.
+
 ## 2026-11-18 — Song spec
 
 ### Added
